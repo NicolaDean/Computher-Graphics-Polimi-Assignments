@@ -2928,9 +2928,8 @@ private:
 							   glm::vec3(CamDir[2])) * glm::mat4(CamDir));
 		}
 		if(glfwGetKey(window, GLFW_KEY_E)) {
-			CamDir = glm::mat3(glm::rotate(glm::mat4(1.0f),
-							   -deltaT * ROT_SPEED,
-							   glm::vec3(CamDir[2])) * glm::mat4(CamDir));
+			CamDir = glm::mat3(glm::rotate(glm::mat4(1.0f),-deltaT * ROT_SPEED,glm::vec3(CamDir[2])) * glm::mat4(CamDir));
+
 		}
 		
 

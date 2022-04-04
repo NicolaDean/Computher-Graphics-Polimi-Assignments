@@ -29,30 +29,19 @@ const glm::mat4 I = glm::mat4(1);
 
 // Create the world matrix for the robot
 
-class Camera{
+class Robot{
 public:
-    double fov;
-    double aspect_ratio;
-    double near_plane;
-    double far_plane;
     float rotation_speed = glm::radians(60.0f);;
     float movement_speed = 0.75f;
 
     GLFWwindow* window;
 
-    glm::mat3 camDir = glm::mat3(1);
+    glm::mat3 camDir = glm::mat3(1.0f);
     glm::vec3 camPos = glm::vec3 (0,0,0);
 
-    Camera(){}
-    /*Camera(double FOV,double a_r, double n,double f,GLFWimage* win){
-        fov = FOV;
-        aspect_ratio = a_r;
-        near_plane = n;
-        far_plane = f;
-        window = win;
-    }*/
+    Robot(){}
 
-    Camera(glm::vec3 initialPos,GLFWwindow* win){
+    Robot(glm::vec3 initialPos,GLFWwindow* win){
         camPos = initialPos;
         window = win;
     }
@@ -60,6 +49,7 @@ public:
     glm::mat4 getMatrix()
     {
         return glm::translate(I, camPos);
+        //return glm::translate(glm::transpose(glm::mat4(camDir)), -camPos);
     }
 
     /**
@@ -77,22 +67,22 @@ private:
      */
     void updateDirection(double deltaT){
         if(glfwGetKey(window, GLFW_KEY_LEFT)) {
-            turnCamera(CAMERA_TURN_LEFT,deltaT);
+            turnRobot(CAMERA_TURN_LEFT,deltaT);
         }
         if(glfwGetKey(window, GLFW_KEY_RIGHT)) {
-            turnCamera(CAMERA_TURN_RIGHT,deltaT);
+            turnRobot(CAMERA_TURN_RIGHT,deltaT);
         }
         if(glfwGetKey(window, GLFW_KEY_UP)) {
-            lookUpCamera(CAMERA_LOOK_UP,deltaT);
+            lookUpRobot(CAMERA_LOOK_UP,deltaT);
         }
         if(glfwGetKey(window, GLFW_KEY_DOWN)) {
-            lookUpCamera(CAMERA_LOOK_DOWN,deltaT);
+            lookUpRobot(CAMERA_LOOK_DOWN,deltaT);
         }
         if(glfwGetKey(window, GLFW_KEY_Q)) {
-            rotateCamera(CAMERA_CLOCKWISE_ROTATION,deltaT);
+            rotateRobot(CAMERA_CLOCKWISE_ROTATION,deltaT);
         }
         if(glfwGetKey(window, GLFW_KEY_E)) {
-            rotateCamera(CAMERA_COUNTER_CLOCKWISE_ROTATION,deltaT);
+            rotateRobot(CAMERA_COUNTER_CLOCKWISE_ROTATION,deltaT);
         }
     }
 
@@ -126,15 +116,17 @@ private:
      * @param clockwise if true clockwise otherwise counterclockwise
      * @param deltaT
      */
-    void rotateCamera(bool clockwise,double deltaT)
+    void rotateRobot(bool clockwise, double deltaT)
     {
-        double camSpeed = deltaT * rotation_speed;
+        float camSpeed = deltaT * rotation_speed;
 
         if(clockwise == CAMERA_COUNTER_CLOCKWISE_ROTATION){
             camSpeed = - camSpeed;
         }
+        glm::mat4 rotation = glm::rotate(I,camSpeed,glm::vec3(camDir[FORWARD_AXIS]));
 
-        //camDir = glm::mat3(glm::rotate(I,camSpeed,glm::vec3(camDir[FORWARD_AXIS])) * glm::mat4(camDir)));
+        camDir = glm::mat3(rotation* glm::mat4(camDir));
+
     }
 
     /**
@@ -143,14 +135,16 @@ private:
      * @param right if true turn right otherwise left
      * @param deltaT
      */
-    void turnCamera(bool right,double deltaT){
-        double camSpeed = deltaT * rotation_speed;
+    void turnRobot(bool right, double deltaT){
+        float camSpeed = deltaT * rotation_speed;
 
         if(right == CAMERA_TURN_LEFT){
             camSpeed = - camSpeed;
         }
 
-        //camDir = glm::mat3(glm::rotate(I,camSpeed,glm::vec3(camDir[VERTICAL_AXIS]))* glm::mat4(camDir);
+        glm::mat4 rotation = glm::rotate(I,camSpeed,glm::vec3(camDir[VERTICAL_AXIS]));
+
+        camDir = glm::mat3(rotation* glm::mat4(camDir));
     }
 
     /**
@@ -159,14 +153,16 @@ private:
      * @param up if true rotate up otherwise down
      * @param deltaT
      */
-    void lookUpCamera(bool up,double deltaT){
-        double camSpeed = deltaT * rotation_speed;
+    void lookUpRobot(bool up, double deltaT){
+        float camSpeed = deltaT * rotation_speed;
 
         if(up == CAMERA_LOOK_DOWN){
             camSpeed = - camSpeed;
         }
 
-        //camDir = glm::mat3(glm::rotate(I,camSpeed,glm::vec3(camDir[SIDE_AXIS])) * glm::mat4(camDir));
+        glm::mat4 rotation = glm::rotate(I,camSpeed,glm::vec3(camDir[SIDE_AXIS]));
+
+        camDir = glm::mat3(rotation* glm::mat4(camDir));
     }
 
 
@@ -202,7 +198,7 @@ public:
  */
 
 static bool firstCall = true;
-static Camera cam;
+static Robot robot;
 static TimeKeeper time_keeper;
 static glm::vec3 initialPos = glm::vec3(-3, 0, 2);
 
@@ -213,27 +209,22 @@ static glm::vec3 initialPos = glm::vec3(-3, 0, 2);
  */
 glm::mat4 getRobotWorldMatrix(GLFWwindow *window) {
 
+    //IF FIRST CALL OF FUNCTION INITIALIZE VARIABLES
     if(firstCall){
-        cam = Camera(initialPos,window);
+        //CREATE ROBOT TRACKING
+        robot = Robot(initialPos,window);
+        //TIME KEEPER
         time_keeper = TimeKeeper();
+        //RESET FIRSTCALL FLAG
         firstCall = false;
     }
 
-    cam.update(time_keeper.update());
+    //UPDATE ROBOT POSITION USING deltaT
+    robot.update(time_keeper.update());
 
-    glm::mat4 out = cam.getMatrix();
+    //GET RESULTING ROBOT MATRIX
+    glm::mat4 out = robot.getMatrix();
     return out;
 }
 
 
-
-/*
- *
- * static glm::vec3 pos = glm::vec3(-3,0,2);	// variable to store robot position
-												// here glm::vec3(-3,0,2) represents a
-												// meaningful initial position for the robot
-												//
-												// this variable is here just as an example!
-												// it should replaced or combined with
-												//  the ones you think necessary for the task
- */
