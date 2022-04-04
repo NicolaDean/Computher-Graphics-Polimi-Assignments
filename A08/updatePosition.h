@@ -26,6 +26,10 @@
 
 //IDENTITY MATRIX
 const glm::mat4 I = glm::mat4(1);
+//AXIS DEFINITION
+const glm::vec3 x_axis = glm::vec3(1,0,0);
+const glm::vec3 y_axis = glm::vec3(0,1,0);
+const glm::vec3 z_axis = glm::vec3(0,0,1);
 
 // Create the world matrix for the robot
 
@@ -38,6 +42,7 @@ public:
 
     glm::mat3 camDir = glm::mat3(1.0f);
     glm::vec3 camPos = glm::vec3 (0,0,0);
+    float rotation = 0.0f;
 
     Robot(){}
 
@@ -48,7 +53,7 @@ public:
 
     glm::mat4 getMatrix()
     {
-        return glm::translate(I, camPos);
+        return glm::translate(I, camPos) * glm::rotate(I,glm::radians(rotation),y_axis);
         //return glm::translate(glm::transpose(glm::mat4(camDir)), -camPos);
     }
 
@@ -92,15 +97,19 @@ private:
      */
     void updatePosition(float deltaT){
         if(glfwGetKey(window, GLFW_KEY_A)) {
+            rotation = 180.0f;
             camPos -= movement_speed * glm::vec3(camDir[SIDE_AXIS]) * deltaT;
         }
         if(glfwGetKey(window, GLFW_KEY_D)) {
+            rotation = 0.0f;
             camPos += movement_speed * glm::vec3(camDir[SIDE_AXIS]) * deltaT;
         }
         if(glfwGetKey(window, GLFW_KEY_S)) {
+            rotation = -90.0f;
             camPos += movement_speed * glm::vec3(camDir[FORWARD_AXIS]) * deltaT;
         }
         if(glfwGetKey(window, GLFW_KEY_W)) {
+            rotation = 90.0f;
             camPos -= movement_speed * glm::vec3(camDir[FORWARD_AXIS]) * deltaT;
         }
         if(glfwGetKey(window, GLFW_KEY_F)) {
@@ -142,8 +151,8 @@ private:
             camSpeed = - camSpeed;
         }
 
-        glm::mat4 rotation = glm::rotate(I,camSpeed,glm::vec3(camDir[VERTICAL_AXIS]));
-
+        //glm::mat4 rotation = glm::rotate(I,camSpeed,glm::vec3(camDir[VERTICAL_AXIS]));
+        glm::mat4 rotation = glm::rotate(I,camSpeed,y_axis); //THIS SHOULD ROTATE ROBOT ON X AXIS
         camDir = glm::mat3(rotation* glm::mat4(camDir));
     }
 
