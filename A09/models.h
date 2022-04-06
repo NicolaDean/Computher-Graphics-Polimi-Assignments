@@ -134,11 +134,11 @@ void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>*
     float slice;
     Vertex v;
 
+    ////FIRST CIRCLE
+    //CENTER
     v = Vertex(center.x,center.y+height/2,center.z);
     addVertexToMesh(v,mesh);
-
     //VERTEX
-    //First Circle
     for(int i = 0; i < NSlices; i++) {
         slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
         x = center.x + radius * cos(slice) ;
@@ -148,7 +148,18 @@ void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>*
         v = Vertex(x,y,z);
         addVertexToMesh(v,mesh);
     }
+    //INDEX
+    for(int i = 0; i < NSlices; i++) {
+        x = 0;
+        y = i+1;
+        z = ((i + 1) % NSlices) + 1;
+        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+        addTriangleToStrips(x,y,z,indexes);
+    }
 
+
+    ////SECOND CIRCLE
+    //CENTER
     v = Vertex(center.x,center.y-height/2,center.z);
     addVertexToMesh(v,mesh);
 
@@ -163,16 +174,7 @@ void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>*
         addVertexToMesh(v,mesh);
     }
 
-
     //INDEX
-    for(int i = 0; i < NSlices; i++) {
-        x = 0;
-        y = i+1;
-        z = ((i + 1) % NSlices) + 1;
-        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
-        addTriangleToStrips(x,y,z,indexes);
-    }
-
     for(int i = NSlices+1; i < 2*NSlices+1; i++) {
         x = NSlices+1;
         y = i+1;
@@ -183,7 +185,8 @@ void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>*
         addTriangleToStrips(x,y,z,indexes);
     }
 
-    //SIDE RECTANGLES
+    ////SIDE RECTANGLES
+    //INDEX
     for(int i = 1; i < NSlices+1; i++) {
         x = i;
         y = NSlices+ 1 + i;
@@ -198,11 +201,6 @@ void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>*
 
         addTriangleToStrips(x,y,z,indexes);
     }
-
-    for(int i=0;i<mesh->size()-3;i = i+3){
-        //printf("Vertex [%d] = \t(%f,%f,%f)\n",i,mesh->at(i),mesh->at(i+1),mesh->at(i+2));
-    }
-
 }
 
 void addSphereToMesh(Vertex center,float radius,std::vector<float>* mesh,std::vector<uint32_t>* indexes){
