@@ -35,6 +35,7 @@ public:
     }
 };
 
+
 void addVertexToMesh(Vertex v,std::vector<float>* mesh){
     mesh->push_back(v.x);
     mesh->push_back(v.y);
@@ -48,82 +49,300 @@ void addTriangleToStrips(uint32_t x,uint32_t y,uint32_t z,std::vector<uint32_t>*
 }
 
 /**
+ * Contain a List for Vertex and one for Indexes to represent Meshes
+ */
+class Mesh{
+protected:
+    std::vector<float>* mesh;
+    std::vector<uint32_t>* indexes;
+
+public:
+    Mesh(std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec){
+        mesh = mesh_vec;
+        indexes = indexes_vec;
+    }
+
+    void addVertex(Vertex v){
+        mesh->push_back(v.x);
+        mesh->push_back(v.y);
+        mesh->push_back(v.z);
+    }
+
+    void addTriangle(uint32_t x,uint32_t y,uint32_t z){
+        indexes->push_back(x);
+        indexes->push_back(y);
+        indexes->push_back(z);
+    }
+};
+
+/**
+ * Definition of cubes in form of vertex and indexes
+ */
+class Cube : public Mesh{
+
+public:
+    Cube(std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec): Mesh(mesh_vec,indexes_vec){
+        generateCubeVertex();
+        generateCubeStrips();
+    }
+
+    /**
  * Generate vertex of cubes
  */
-void generateCubeVertex(){
-    Vertex v;
+    void generateCubeVertex(){
+        Vertex v;
 // first vertex of M1
-    v = Vertex(-1,-1,-1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(-1,-1,-1);
+        this->addVertex(v);
 
 // second vertex of M1
-    v = Vertex(1,-1,-1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(1,-1,-1);
+        this->addVertex(v);
 
 // third vertex of M1
-    v = Vertex(1,1,-1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(1,1,-1);
+        this->addVertex(v);
 
 // fourth vertex of M1
-    v = Vertex(-1,1,-1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(-1,1,-1);
+        this->addVertex(v);
 
 // fifth vertex of M1
-    v = Vertex(-1,-1,1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(-1,-1,1);
+        this->addVertex(v);
 
 //sixth vertex of M1
-    v = Vertex(1,-1,1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(1,-1,1);
+        this->addVertex(v);
 
 // seventh vertex of M1
-    v = Vertex(1,1,1);
-    addVertexToMesh(v,&M1_vertices);
+        v = Vertex(1,1,1);
+        this->addVertex(v);
 
 // eights vertex of M1
-    v = Vertex(-1,1,1);
-    addVertexToMesh(v,&M1_vertices);
-}
+        v = Vertex(-1,1,1);
+        this->addVertex(v);
+    }
 
-void generateCubeStrips(){
+    void generateCubeStrips(){
 
 // first triangle
-    addTriangleToStrips(0,1,2,&M1_indices);
+        this->addTriangle(0,1,2);
 
 // second triangle
-    addTriangleToStrips(2,3,0,&M1_indices);
+        this->addTriangle(2,3,0);
 
 // third triangle
-    addTriangleToStrips(0,3,4,&M1_indices);
+        this->addTriangle(0,3,4);
 
 // forth triangle
-    addTriangleToStrips(4,3,7,&M1_indices);
+        this->addTriangle(4,3,7);
 
 // fifth triangle
-    addTriangleToStrips(5,6,7,&M1_indices);
+        this->addTriangle(5,6,7);
 
 // six triangle
-    addTriangleToStrips(7,4,5,&M1_indices);
+        this->addTriangle(7,4,5);
 
 // seven triangle
-    addTriangleToStrips(1,6,5,&M1_indices);
+        this->addTriangle(1,6,5);
 
 // eight triangle
-    addTriangleToStrips(1,2,6,&M1_indices);
+        this->addTriangle(1,2,6);
 
 // nine triangle
-    addTriangleToStrips(7,6,2,&M1_indices);
+        this->addTriangle(7,6,2);
 
 //ten triangle
-    addTriangleToStrips(3,2,7,&M1_indices);
+        this->addTriangle(3,2,7);
 
 // eleven triangle
-    addTriangleToStrips(4,5,0,&M1_indices);
+        this->addTriangle(4,5,0);
 
 //twelve triangle
-    addTriangleToStrips(1,0,5,&M1_indices);
+        this->addTriangle(1,0,5);
 
-}
+    }
+};
+
+/**
+ * Definition of cylinder in form of vertex and indexes
+ */
+class Cylinder : public Mesh{
+public:
+    Cylinder(Vertex center,float height,float radius,int NSlices,std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec): Mesh(mesh_vec,indexes_vec){
+        ////FIRST CIRCLE
+        drawCircle(center,height/2,radius,NSlices,0);
+
+        ////SECOND CIRCLE
+        drawCircle(center,-height/2,radius,NSlices,NSlices+1);
+
+        ////BORDERS OF CYLINDER
+        drawBorders(NSlices);
+    }
+
+    void drawCircle(Vertex center,float height,float radius,int NSlices,int indexStart){
+
+        //CENTER
+        Vertex v = Vertex(center.x,center.y+height,center.z);
+        this->addVertex(v);
+        float slice=0;
+        float x,y,z = 0;
+
+        //VERTEX
+        for(int i = 0; i < NSlices; i++) {
+            slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
+            x = center.x + radius * cos(slice) ;
+            y = center.y + height; // y of the vertex
+            z = center.z + radius * sin(slice); // z of the vertex
+
+            v = Vertex(x,y,z);
+            this->addVertex(v);
+        }
+
+        //INDEX
+        for(int i = indexStart; i < (NSlices + indexStart); i++) {
+            x = indexStart;
+            y = i+1;
+            z = ((i + 1) % (NSlices + indexStart)) + 1;
+
+            if(z==1) z=indexStart+1;
+
+            //printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+            this->addTriangle(x,y,z);
+        }
+    }
+
+    void drawBorders(int NSlices){
+        float x,y,z = 0;
+
+        for(int i = 1; i < NSlices+1; i++) {
+            x = i;
+            y = NSlices+ 1 + i;
+            z = ((i + 1) % (NSlices+1));
+
+            if(z==0) z=1;
+
+            //printf("Triangle 1 [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+
+            this->addTriangle(x,y,z);
+
+            x = i+1;
+            y = NSlices+ 1 + i;
+            z = (NSlices+ 2 + i)%(2*NSlices +2);
+
+            if(x==NSlices+1) x = 1;
+            if(z==0) z=NSlices+2;
+
+            //printf("Triangle 2 [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+            this->addTriangle(x,y,z);
+        }
+    }
+};
+
+
+class Sphere : public Mesh{
+public:
+    Sphere(Vertex center,float radius,int NumStack,int NumSector,std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec): Mesh(mesh_vec,indexes_vec){
+
+        generateVertex(center,radius,NumStack,NumSector);
+
+        generateIndex(NumStack,NumSector);
+    }
+
+    void generateVertex(Vertex center,float radius,int NumStack,int NumSector){
+        float theta;
+        float fi;
+
+        float x;
+        float y;
+        float z;
+
+        Vertex v;
+        int a=0;
+        //GENERATING ALL VERTEX
+
+        //FIRST VERTEX 0 (first)
+        v = Vertex(0,0,1);
+        this->addVertex(v);
+
+        for(int curr_stack=1;curr_stack<NumStack;curr_stack++){
+            fi = (M_PI/2) - M_PI*((float)curr_stack/NumStack);
+            for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
+                theta = 2 * M_PI*((float)curr_sector/NumSector);
+
+                x = (radius*cos(fi)) * cos(theta);
+                y = (radius*cos(fi)) * sin(theta);
+                z = (radius*sin(fi));
+
+                //printf("VERTEX (%d)  [%d][%d] (%f,%f,%f)\n", a,curr_stack, curr_sector,x,y,z);
+                a++;
+                v = Vertex(x,y,z);
+                this->addVertex(v);
+            }
+        }
+        //LAST VERTEX
+        v = Vertex(0,0,-1);
+        this->addVertex(v);
+
+        a=0;
+        for(int i=0;i<mesh->size();i=i+3){
+            printf("VERTEX (%d) (%f,%f,%f)\n", a,mesh->at(i),mesh->at(i+1),mesh->at(i+2));
+            a++;
+        }
+    }
+
+    void generateIndex(int NumStack,int NumSector){
+        int first =1;
+        //GENERATE ALL INDEX
+        for(int curr_stack=0;curr_stack<NumStack-1;curr_stack++){
+            for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
+                int i = curr_stack*NumSector +  curr_sector+1;
+                int j = (curr_stack+1)*NumSector + curr_sector+1;
+
+                int next_i = i + 1;
+                int next_j = j + 1;
+
+
+                if(next_i == (curr_stack+1)*NumSector+1)next_i=(curr_stack)*NumSector+1;
+                if(next_j == (curr_stack+2)*NumSector+1) next_j=(curr_stack+1)*NumSector+1;
+
+                if(curr_stack<NumStack-2)
+                {
+                    this->addTriangle(i, j, next_i);
+                    //printf("TRI ONE [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, i, j, next_i);
+
+                    this->addTriangle(next_i, j, next_j);
+                    printf("TRI TWO [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,next_i,j,next_j);
+                }
+
+                i--;
+                j--;
+
+                if(curr_stack == 0){
+                    i=i+1;
+                    next_i = i+1;
+
+                    if(next_i == NumSector+1) next_i = 1;
+                    this->addTriangle(0, i, next_i);
+                    //printf("LINE ONE [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, 0, i, next_i);
+
+                }if(curr_stack == (NumStack-2))
+                {
+                    i=i+1;
+                    next_i = i+1;
+
+                    if(next_i == (curr_stack+1)*NumSector+1) next_i = curr_stack*NumSector+1;
+                    this->addTriangle((curr_stack+1)*NumSector, i, next_i);
+                    printf("LINE TWO [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, (curr_stack+1)*NumSector+1, i, next_i);
+
+                }
+
+            }
+        }
+    }
+};
+
 
 void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>* mesh,std::vector<uint32_t>* indexes)
 {
@@ -253,14 +472,12 @@ void addSphereToMesh(Vertex center,float radius,std::vector<float>* mesh,std::ve
 
 // this function creates the geometries to be shown, and output thems
 // in global variables M1_vertices and M1_indices to M4_vertices and M4_indices
-    void makeModels() {
+void makeModels() {
+
     ////--------------------------------------------------------------------------
     //// M1 : Cube----------------------------------------------------------------
     ////--------------------------------------------------------------------------
-    // CUBE VERTEX
-    generateCubeVertex();
-    //INDEX STRIPS
-    generateCubeStrips();
+    Cube cube = Cube(&M1_vertices,&M1_indices);
 
     ////--------------------------------------------------------------------------
     //// M2 : Cylinder------------------------------------------------------------
@@ -270,15 +487,15 @@ void addSphereToMesh(Vertex center,float radius,std::vector<float>* mesh,std::ve
     float height = 1;
     Vertex center = Vertex(0,0,-3);
 
-    addCircleToMesh(center,radius,height,&M2_vertices,&M2_indices);
+    Cylinder cylinder = Cylinder(center,height,radius,72,&M2_vertices,&M2_indices);
+    //addCircleToMesh(center,radius,height,&M2_vertices,&M2_indices);
 
     ////--------------------------------------------------------------------------
     //// M3 : Sphere------------------------------------------------------------
     ////--------------------------------------------------------------------------
 
-    addSphereToMesh(Vertex(1,1,1),1,&M3_vertices,&M3_indices);
-
-
+    Sphere sphere = Sphere(Vertex(1,1,1),1,20,20,&M3_vertices,&M3_indices);
+    //addSphereToMesh(Vertex(1,1,1),1,&M3_vertices,&M3_indices);
 
 ////--------------------------------------------------------------------------
 //// M4 : Spring------------------------------------------------------------
