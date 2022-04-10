@@ -35,18 +35,147 @@ public:
     }
 };
 
-
+//OLD FUNCTIONS
 void addVertexToMesh(Vertex v,std::vector<float>* mesh){
     mesh->push_back(v.x);
     mesh->push_back(v.y);
     mesh->push_back(v.z);
 }
-
 void addTriangleToStrips(uint32_t x,uint32_t y,uint32_t z,std::vector<uint32_t>* indexes){
     indexes->push_back(x);
     indexes->push_back(y);
     indexes->push_back(z);
 }
+void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>* mesh,std::vector<uint32_t>* indexes)
+{
+    int NSlices = 72;
+    float x;
+    float y;
+    float z;
+    float slice;
+    Vertex v;
+
+    ////FIRST CIRCLE
+    //CENTER
+    v = Vertex(center.x,center.y+height/2,center.z);
+    addVertexToMesh(v,mesh);
+    //VERTEX
+    for(int i = 0; i < NSlices; i++) {
+        slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
+        x = center.x + radius * cos(slice) ;
+        y = center.y + height/2; // y of the vertex
+        z = center.z + radius * sin(slice); // z of the vertex
+
+        v = Vertex(x,y,z);
+        addVertexToMesh(v,mesh);
+    }
+    //INDEX
+    for(int i = 0; i < NSlices; i++) {
+        x = 0;
+        y = i+1;
+        z = ((i + 1) % NSlices) + 1;
+        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+        addTriangleToStrips(x,y,z,indexes);
+    }
+
+
+    ////SECOND CIRCLE
+    //CENTER
+    v = Vertex(center.x,center.y-height/2,center.z);
+    addVertexToMesh(v,mesh);
+
+    //VERTEX
+    for(int i = 0; i < NSlices; i++) {
+        slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
+        x = center.x + radius * cos(slice) ;
+        y = center.y - height/2; // y of the vertex
+        z = center.z + radius * sin(slice); // z of the vertex
+
+        v = Vertex(x,y,z);
+        addVertexToMesh(v,mesh);
+    }
+
+    //INDEX
+    for(int i = NSlices+1; i < 2*NSlices+1; i++) {
+        x = NSlices+1;
+        y = i+1;
+        z = ((i + 1) % (2*NSlices+1)) + 1;
+        if(z==1) z = x+1;
+
+        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+        addTriangleToStrips(x,y,z,indexes);
+    }
+
+    ////SIDE RECTANGLES
+    //INDEX
+    for(int i = 1; i < NSlices+1; i++) {
+        x = i;
+        y = NSlices+ 1 + i;
+        z = ((i + 1) % NSlices);
+
+        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
+        addTriangleToStrips(x,y,z,indexes);
+
+        x = i+1;
+        y = NSlices+ 1 + i;
+        z = (NSlices+ 2 + i)%(2*NSlices +1);
+
+        addTriangleToStrips(x,y,z,indexes);
+    }
+}
+void addSphereToMesh(Vertex center,float radius,std::vector<float>* mesh,std::vector<uint32_t>* indexes){
+
+    int NumSector = 20;
+    int NumStack  = 20;
+
+    float theta;
+    float fi;
+
+    float x;
+    float y;
+    float z;
+
+    Vertex v;
+    //GENERATING ALL VERTEX
+    for(int curr_stack=0;curr_stack<NumStack;curr_stack++){
+        fi = (M_PI/2) - M_PI*((float)curr_stack/NumStack);
+        for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
+            theta = 2 * M_PI*((float)curr_sector/NumSector);
+
+            x = (radius*cos(fi)) * cos(theta);
+            y = (radius*cos(fi)) * sin(theta);
+            z = (radius*sin(fi));
+            v = Vertex(x,y,z);
+            addVertexToMesh(v,mesh);
+        }
+    }
+
+    //GENERATE ALL INDEX
+    for(int curr_stack=0;curr_stack<NumStack;curr_stack++){
+        for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
+            int i = curr_stack*NumSector +  curr_sector;
+            int j = (curr_stack+1)*NumSector + curr_sector;
+            int next_i = (i+1) % ((curr_stack+1)*NumSector);
+            int next_j = (j+1);
+
+            if(next_j == (curr_stack+2)*NumSector) next_j = (curr_stack+1)*NumSector;
+
+            if(j == NumStack*NumSector + 1) return;
+
+            addTriangleToStrips(i,j,i+1,indexes);
+            printf("LINE ONE [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,i,j,next_i);
+            addTriangleToStrips(i+1,j,j+1,indexes);
+            printf("LINE TWO [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,next_i,j,next_j);
+        }
+    }
+
+}
+
+////------------------------------------------------------
+////------------------------------------------------------
+////---------NEW CODE VERSION-----------------------------
+////------------------------------------------------------
+////------------------------------------------------------
 
 /**
  * Contain a List for Vertex and one for Indexes to represent Meshes
@@ -240,7 +369,9 @@ public:
     }
 };
 
-
+/**
+ * Definition of Sphere in form of vertex and indexes
+ */
 class Sphere : public Mesh{
 public:
     Sphere(Vertex center,float radius,int NumStack,int NumSector,std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec): Mesh(mesh_vec,indexes_vec){
@@ -307,18 +438,20 @@ public:
                 if(next_i == (curr_stack+1)*NumSector+1)next_i=(curr_stack)*NumSector+1;
                 if(next_j == (curr_stack+2)*NumSector+1) next_j=(curr_stack+1)*NumSector+1;
 
+                //DRAW MIDDLE SQUARES SECTOR BY SECTOR (2 TRIANGLE EACH SQUARE)
                 if(curr_stack<NumStack-2)
                 {
                     this->addTriangle(i, j, next_i);
                     //printf("TRI ONE [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, i, j, next_i);
 
                     this->addTriangle(next_i, j, next_j);
-                    printf("TRI TWO [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,next_i,j,next_j);
+                    //printf("TRI TWO [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,next_i,j,next_j);
                 }
 
                 i--;
                 j--;
 
+                //DRAW FIRST CIRCLE (ONLY TRIANGLE)
                 if(curr_stack == 0){
                     i=i+1;
                     next_i = i+1;
@@ -327,14 +460,16 @@ public:
                     this->addTriangle(0, i, next_i);
                     //printf("LINE ONE [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, 0, i, next_i);
 
-                }if(curr_stack == (NumStack-2))
+                }
+                //DRAW LAST CIRCLE (ONLY TRIANGLE)
+                if(curr_stack == (NumStack-2))
                 {
                     i=i+1;
                     next_i = i+1;
 
                     if(next_i == (curr_stack+1)*NumSector+1) next_i = curr_stack*NumSector+1;
                     this->addTriangle((curr_stack+1)*NumSector, i, next_i);
-                    printf("LINE TWO [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, (curr_stack+1)*NumSector+1, i, next_i);
+                    //printf("LINE TWO [%d][%d] = \t(%d,%d,%d)\n", curr_stack, curr_sector, (curr_stack+1)*NumSector+1, i, next_i);
 
                 }
 
@@ -343,133 +478,88 @@ public:
     }
 };
 
+/**
+ * Definition of Spiral in form of vertex and indexes
+ */
+class Spiral : public Mesh{
+public:
+    Spiral(float helix_radius,float ring_radius,int NumHelix,int NumRings,int levels,std::vector<float>* mesh_vec,std::vector<uint32_t>* indexes_vec): Mesh(mesh_vec,indexes_vec){
 
-void addCircleToMesh(Vertex center,float radius,float height,std::vector<float>* mesh,std::vector<uint32_t>* indexes)
-{
-    int NSlices = 72;
-    float x;
-    float y;
-    float z;
-    float slice;
-    Vertex v;
+        generateSpiralVertex(helix_radius,ring_radius,NumHelix,NumRings,levels);
 
-    ////FIRST CIRCLE
-    //CENTER
-    v = Vertex(center.x,center.y+height/2,center.z);
-    addVertexToMesh(v,mesh);
-    //VERTEX
-    for(int i = 0; i < NSlices; i++) {
-        slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
-        x = center.x + radius * cos(slice) ;
-        y = center.y + height/2; // y of the vertex
-        z = center.z + radius * sin(slice); // z of the vertex
-
-        v = Vertex(x,y,z);
-        addVertexToMesh(v,mesh);
-    }
-    //INDEX
-    for(int i = 0; i < NSlices; i++) {
-        x = 0;
-        y = i+1;
-        z = ((i + 1) % NSlices) + 1;
-        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
-        addTriangleToStrips(x,y,z,indexes);
+        generateSpringIndex(NumHelix,NumRings);
     }
 
+    void generateSpiralVertex(float helix_radius,float ring_radius,int NumHelix,int NumRings,int levels){
 
-    ////SECOND CIRCLE
-    //CENTER
-    v = Vertex(center.x,center.y-height/2,center.z);
-    addVertexToMesh(v,mesh);
+        float helix_x,helix_y,helix_z;
+        float x,y,z;
+        float theta,ring_slice;
+        float constant = 0.2;
 
-    //VERTEX
-    for(int i = 0; i < NSlices; i++) {
-        slice = (2.0 * M_PI) * ((float)i/(float)NSlices);
-        x = center.x + radius * cos(slice) ;
-        y = center.y - height/2; // y of the vertex
-        z = center.z + radius * sin(slice); // z of the vertex
+        int c = 0;
+        levels = levels * 2;
+        //Generate Helix path (and use helix points as centers for Rings)
+        for(int helix = 0;helix < NumHelix;helix++,c=c+levels){
+            theta = -M_PI/2 + M_PI * ((float)c/NumHelix);
 
-        v = Vertex(x,y,z);
-        addVertexToMesh(v,mesh);
-    }
+            //Helix point coordinatex
+            helix_x = helix_radius * cos(theta);
+            helix_y = constant * theta;
+            helix_z = helix_radius * sin(theta);
 
-    //INDEX
-    for(int i = NSlices+1; i < 2*NSlices+1; i++) {
-        x = NSlices+1;
-        y = i+1;
-        z = ((i + 1) % (2*NSlices+1)) + 1;
-        if(z==1) z = x+1;
+            //Use Helix Point as center for a ring
+            for(int ring = 0;ring < NumRings;ring++){
+                ring_slice = (2.0 * M_PI) * ((float)ring/(float)NumRings);
 
-        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
-        addTriangleToStrips(x,y,z,indexes);
-    }
+                x = ring_radius * cos(theta) * sin(ring_slice) + helix_x;
+                y = ring_radius * cos(ring_slice) + helix_y;
+                z = ring_radius * sin(theta) * sin(ring_slice) + helix_z;
 
-    ////SIDE RECTANGLES
-    //INDEX
-    for(int i = 1; i < NSlices+1; i++) {
-        x = i;
-        y = NSlices+ 1 + i;
-        z = ((i + 1) % NSlices);
-
-        printf("Vertex [%d] = \t(%f,%f,%f)\n",i,x,y,z);
-        addTriangleToStrips(x,y,z,indexes);
-
-        x = i+1;
-        y = NSlices+ 1 + i;
-        z = (NSlices+ 2 + i)%(2*NSlices +1);
-
-        addTriangleToStrips(x,y,z,indexes);
-    }
-}
-
-void addSphereToMesh(Vertex center,float radius,std::vector<float>* mesh,std::vector<uint32_t>* indexes){
-
-    int NumSector = 20;
-    int NumStack  = 20;
-
-    float theta;
-    float fi;
-
-    float x;
-    float y;
-    float z;
-
-    Vertex v;
-    //GENERATING ALL VERTEX
-    for(int curr_stack=0;curr_stack<NumStack;curr_stack++){
-        fi = (M_PI/2) - M_PI*((float)curr_stack/NumStack);
-        for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
-            theta = 2 * M_PI*((float)curr_sector/NumSector);
-
-            x = (radius*cos(fi)) * cos(theta);
-            y = (radius*cos(fi)) * sin(theta);
-            z = (radius*sin(fi));
-            v = Vertex(x,y,z);
-            addVertexToMesh(v,mesh);
+                Vertex v = Vertex(x,y,z);
+                this->addVertex(v);
+            }
         }
     }
 
-    //GENERATE ALL INDEX
-    for(int curr_stack=0;curr_stack<NumStack;curr_stack++){
-        for(int curr_sector=0;curr_sector<NumSector;curr_sector++){
-            int i = curr_stack*NumSector +  curr_sector;
-            int j = (curr_stack+1)*NumSector + curr_sector;
-            int next_i = (i+1) % ((curr_stack+1)*NumSector);
-            int next_j = (j+1);
+    void generateSpringIndex(int NumHelix,int NumRings){
+        //TODO check for last RING triangles
+        int x,y,z = 0;
+        int offset = 0;
+        for(int helix=0;helix<NumHelix-1;helix++){
+            offset = helix*NumRings;
+            for(int ring=0;ring<NumRings;ring++){
 
-            if(next_j == (curr_stack+2)*NumSector) next_j = (curr_stack+1)*NumSector;
+                x = ring + offset;//i
+                y = NumRings + ring + offset;//j
+                z = NumRings + ring + 1 + offset;//j+1
 
-            if(j == NumStack*NumSector + 1) return;
+                if(z == 2*NumRings + offset) z = NumRings + offset;
 
-            addTriangleToStrips(i,j,i+1,indexes);
-            printf("LINE ONE [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,i,j,next_i);
-            addTriangleToStrips(i+1,j,j+1,indexes);
-            printf("LINE TWO [%d][%d] = \t(%d,%d,%d)\n",curr_stack,curr_sector,next_i,j,next_j);
+                printf("Triangle 1 [%d] = \t(%d,%d,%d)\n",ring,x,y,z);
+
+                this->addTriangle(x,y,z);
+
+                x = ring + offset;//i
+                y = NumRings + ring + 1 + offset;//j+1
+                z = ring + 1 + offset;//i+1
+
+                if(y == 2*NumRings + offset) y = NumRings + offset;
+                if(z == NumRings + offset) z = offset;
+
+                //printf("Triangle 2 [%d] = \t(%d,%d,%d)\n",ring,x,y,z);
+                this->addTriangle(x,y,z);
+            }
         }
     }
+};
 
-}
 
+////------------------------------------------------------
+////------------------------------------------------------
+////---------ASSIGNMENT MAIN CODE-------------------------
+////------------------------------------------------------
+////------------------------------------------------------
 // this function creates the geometries to be shown, and output thems
 // in global variables M1_vertices and M1_indices to M4_vertices and M4_indices
 void makeModels() {
@@ -501,58 +591,6 @@ void makeModels() {
 //// M4 : Spring------------------------------------------------------------
 ////--------------------------------------------------------------------------
 
+    Spiral spiral = Spiral(1,0.2,1000,72,20,&M4_vertices,&M4_indices);
 
-// Replace the code below, that creates a simple octahedron, with the one to create a spring.
-M4_vertices.resize(3 * 6);
-
-// Vertices definitions
-M4_vertices[0]  =  0.0;
-M4_vertices[1]  =  1.414;
-M4_vertices[2]  = -1.0;
-M4_vertices[3]  =  0.0;
-M4_vertices[4]  = -1.414;
-M4_vertices[5]  = -1.0;
-M4_vertices[6]  = -1.0;
-M4_vertices[7]  =  0.0;
-M4_vertices[8]  = -2.0;
-M4_vertices[9]  = -1.0;
-M4_vertices[10] =  0.0;
-M4_vertices[11] =  0.0;
-M4_vertices[12] =  1.0;
-M4_vertices[13] =  0.0;
-M4_vertices[14] =  0.0;
-M4_vertices[15] =  1.0;
-M4_vertices[16] =  0.0;
-M4_vertices[17] = -2.0;
-
-
-// Resizes the indices array. Repalce the values with the correct number of
-// indices (3 * number of triangles)
-M4_indices.resize(3 * 8);
-
-// indices definitions
-M4_indices[0]  = 0;
-M4_indices[1]  = 2;
-M4_indices[2]  = 3;
-M4_indices[3]  = 1;
-M4_indices[4]  = 3;
-M4_indices[5]  = 2;
-M4_indices[6]  = 0;
-M4_indices[7]  = 3;
-M4_indices[8]  = 4;
-M4_indices[9]  = 1;
-M4_indices[10] = 4;
-M4_indices[11] = 3;
-M4_indices[12] = 0;
-M4_indices[13] = 4;
-M4_indices[14] = 5;
-M4_indices[15] = 1;
-M4_indices[16] = 5;
-M4_indices[17] = 4;
-M4_indices[18] = 0;
-M4_indices[19] = 5;
-M4_indices[20] = 2;
-M4_indices[21] = 1;
-M4_indices[22] = 2;
-M4_indices[23] = 5;
 }
