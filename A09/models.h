@@ -523,7 +523,6 @@ public:
     }
 
     void generateSpringIndex(int NumHelix,int NumRings){
-        //TODO check for last RING triangles
         int x,y,z = 0;
         int offset = 0;
         for(int helix=0;helix<NumHelix-1;helix++){
@@ -594,3 +593,5 @@ void makeModels() {
     Spiral spiral = Spiral(1,0.2,1000,72,20,&M4_vertices,&M4_indices);
 
 }
+
+//ciao io sono nicolòsò e sto imoò
