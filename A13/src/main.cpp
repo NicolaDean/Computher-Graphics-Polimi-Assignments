@@ -19,9 +19,9 @@ const uint32_t HEIGHT = 480;
 
 int main() {
     //App::App app = App::App();
-    MyApp::MyApp assignment13 = MyApp::MyApp();
+    MyApp::MyApp assignment13 = MyApp::MyApp(WIDTH,HEIGHT,"Assignment 13");
     try {
-        assignment13.run(WIDTH,HEIGHT,"Assignment 13");
+        assignment13.run();
     } catch (const std::exception& e) {
         std::cerr << e.what() << std::endl;
         return EXIT_FAILURE;

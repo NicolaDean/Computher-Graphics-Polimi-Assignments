@@ -1,16 +1,44 @@
-#include <vulkan/vulkan.h>
+#include "commonLibs.h"
+#include "DeviceManager.h"
+#include "LogicDeviceManager.h"
+#include "WindowsSurface.h"
+#include "CommandBuffer.h"
 
-#include <iostream>
-#include <stdexcept>
-#include <cstdlib>
-
-#include "WindowsFactory.h"
 namespace App{
     class App {
     private:
-        WindowsFactory::WindowsFactory windows;
+        int width;
+        int height;
+        std::string name;
+        GLFWwindow* window;
+        VkInstance instance;
+        DeviceManager::DeviceManager devicesManager;
+        DeviceManager::LogicDeviceManager logicDeviceManager;
+        Presentation::WindowsSurface windowsSurface;
+        CommandBuffer::CommandBuffer commandBuffer;
+
     public:
-        App();
-        void run(int w,int h,std::string title);
+        App(){}
+
+        App(int w,int h,std::string win_name)
+        {
+            width = w;
+            height = h;
+            name = win_name;
+        }
+    private:
+        void init();
+        void initVulkan();
+        void main();
+        void appLoop();
+        void close();
+        void createInstance();
+        void printExtensionNames();
+        GLFWwindow* getWindow();
+    public:
+        void run();
+        void loop();
     };
+
+
 }

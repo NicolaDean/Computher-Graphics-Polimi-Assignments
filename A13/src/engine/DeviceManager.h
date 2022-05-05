@@ -1,14 +1,14 @@
-#include <vector>
-#include <vulkan/vulkan.h>
+#include "commonLibs.h"
+#include "QueueFamily.h"
 
 namespace DeviceManager{
     class DeviceManager {
-
     private:
         VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
         uint32_t deviceCount = 0;
         VkInstance *instance;
         std::vector<VkPhysicalDevice> devices;
+
     public:
         /**
          * Constructor
@@ -43,6 +43,15 @@ namespace DeviceManager{
          * @return
          */
         bool isDeviceSuitable(VkPhysicalDevice device);
+
+        /**
+         *
+         * @return the selected device
+         */
+        VkPhysicalDevice getSelectedDevice();
+
+
+        void printAllDeviceInfo(VkPhysicalDevice device);
     };
 }
 

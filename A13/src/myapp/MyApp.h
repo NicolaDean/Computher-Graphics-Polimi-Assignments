@@ -10,10 +10,13 @@ namespace MyApp{
     class MyApp: public App::App{
 
     public:
-        MyApp(){
+        MyApp(int width,int h,std::string win_name):App::App(width,h,win_name){
             //Some Code....
         }
 
+        void loop(){
+            std::cout<<"Banana\n";
+        }
     };
 }
 
