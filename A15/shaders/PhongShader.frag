@@ -1,4 +1,5 @@
-#version 450#extension GL_ARB_separate_shader_objects : enable
+#version 450
+#extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec3 fragPos;
 layout(location = 1) in vec3 fragNorm;
@@ -19,37 +20,73 @@ layout(binding = 2) uniform GlobalUniformBufferObject {
 
 
 
-
 /**** Modify from here *****/
 
+// DIRECT LIGHT:
+// Equation is composed by constant direction and color
+// L(l,ll) * fr(x,lx,wr)
+//ll -> color
+//lx -> direction
 vec3 direct_light_dir(vec3 pos) {
 	// Directional light direction
-	return vec3(0.0f, 0.0f, 1.0f);
+	return gubo.lightDir;
 }
 
 vec3 direct_light_color(vec3 pos) {
 	// Directional light color
-	return vec3(0.5f, 1.0f, 0.5f);
+	return gubo.lightColor;
 }
 
+vec3 norm(vec3 vec){
+	float len = length(vec);
+
+	return vec/len;
+}
+
+//POINT LIGHT:
 vec3 point_light_dir(vec3 pos) {
 	// Point light direction
-	return vec3(0.0f, 0.0f, 1.0f);
+	return norm(gubo.lightPos - pos);
 }
 
+// ((g/(|p-x|))^b) * color;
 vec3 point_light_color(vec3 pos) {
-	// Point light color
-	return vec3(0.5f, 1.0f, 0.5f);
+	// g/(|p-x|)
+	float b = gubo.coneInOutDecayExp.w;
+	float g = gubo.coneInOutDecayExp.z;
+
+	float fraction = (g/ length(gubo.lightPos - pos));
+
+	//(fraction^b)*color
+	vec3 res = pow(fraction,b)*gubo.lightColor;
+	return res;
 }
 
 vec3 spot_light_dir(vec3 pos) {
 	// Spot light direction
-	return vec3(0.0f, 0.0f, 1.0f);
+
+	vec3 res = gubo.lightPos - pos;
+	return normalize(res);
 }
 
 vec3 spot_light_color(vec3 pos) {
 	// Spot light color
-	return vec3(0.5f, 1.0f, 0.5f);
+
+	float cin = gubo.coneInOutDecayExp.y;
+	float cout = gubo.coneInOutDecayExp.x;
+	float b = gubo.coneInOutDecayExp.w;
+	float g = gubo.coneInOutDecayExp.z;
+
+	vec3 lx = norm(gubo.lightPos - pos);
+
+	float cos_alpha = dot(lx,gubo.lightDir);
+
+	float clmp = clamp((cos_alpha-cout)/(cin-cout),0,1);
+	float fraction = (g/length(gubo.lightPos - pos));
+	vec3 color 	   = pow(fraction,b)*gubo.lightColor;
+
+	vec3 res = color * clmp;
+	return res;
 }
 
 /**** To from here *****/
