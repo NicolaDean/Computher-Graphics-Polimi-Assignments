@@ -1,11 +1,13 @@
 #include "DeviceManager.h"
+#include "SwapChain.h"
+
 namespace DeviceManager{
 
     DeviceManager::DeviceManager(VkInstance * inst){
         instance = inst;
     }
 
-    void DeviceManager::pickPhysicalDevice() {
+    void DeviceManager::pickPhysicalDevice(VkSurfaceKHR surface) {
         uint32_t deviceCount = 0;
         vkEnumeratePhysicalDevices(*instance, &deviceCount, nullptr);
 
@@ -17,7 +19,7 @@ namespace DeviceManager{
         vkEnumeratePhysicalDevices(*instance, &deviceCount, devices.data());
 
         for (const auto& device : devices) {
-            if (isDeviceSuitable(device)) {
+            if (isDeviceSuitable(device,surface)) {
                 physicalDevice = device; //Select device
 
                 printAllDeviceInfo(physicalDevice);
@@ -50,24 +52,52 @@ namespace DeviceManager{
 
     }
 
-    bool DeviceManager::isDeviceSuitable(VkPhysicalDevice device) {
+    bool DeviceManager::isDeviceSuitable(VkPhysicalDevice device,VkSurfaceKHR surface) {
 
-        VkPhysicalDeviceProperties deviceProperties;
-        VkPhysicalDeviceFeatures deviceFeatures;
-        vkGetPhysicalDeviceProperties(device, &deviceProperties);
-        vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+        //Query For Family Indices of our device
+        QueueFamily::QueueFamilyIndices indices = QueueFamily::findQueueFamilies(device,surface);
 
-        std::cout << "\tDevice Name: " << deviceProperties.deviceName << "\n";
-        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && deviceFeatures.geometryShader;
+        //print the device name we are checking
+        //DeviceManager::printDeviceName(device);
 
-        return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFeatures.geometryShader;
+        //Check For Extensions Support
+        bool extensionsSupported = checkDeviceExtensionSupport(device);
 
-        //TODO PUT HERE ALL DEVICE PROPERTIES I WANT
-       //EG CHECK IF IT IS A GPU OR A CPU, SUPPORT GEOM SHADERS ETC..
+        //Check For SwapChain Support with device and compatibility with surface
+        bool swapChainAdequate = false;
+        if (extensionsSupported) {
+            Presentation::SwapChainSupportDetails swapChainSupport = Presentation::querySwapChainSupport(device,surface);
+            swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+        }
 
-        return true;
+        //Return true if device has all necessary requirements
+        return indices.isComplete() && extensionsSupported && swapChainAdequate;;
+
     }
 
+    bool DeviceManager::checkDeviceExtensionSupport(VkPhysicalDevice device) {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+
+        std::set<std::string> requiredExtensions(AppConstants::deviceExtensions.begin(), AppConstants::deviceExtensions.end());
+
+        for (const auto& extension : availableExtensions) {
+            requiredExtensions.erase(extension.extensionName);
+        }
+
+        return requiredExtensions.empty();
+    }
+
+    void printDeviceName(VkPhysicalDevice device){
+        VkPhysicalDeviceProperties deviceProperties;
+        vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+        std::cout << "\tDevice Name: " << deviceProperties.deviceName << "\n";
+
+    }
     void DeviceManager::printAllDeviceInfo(VkPhysicalDevice device){
 
         std::cout << "----------------------------------------"<<"\n";

@@ -19,7 +19,7 @@ namespace App{
         glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
         window = glfwCreateWindow(width, height, name.c_str(), nullptr, nullptr);
         devicesManager = DeviceManager::DeviceManager(&instance);
-
+        swapChain = Presentation::SwapChain();
     }
 
     void App::initVulkan(){
@@ -29,13 +29,13 @@ namespace App{
         //Create Presentation Layer
         windowsSurface.createSurface(instance,window);
         //QUERY FOR AVAILABLE DEVICES AND SELECT THE BEST ONE
-        devicesManager.pickPhysicalDevice();
+        devicesManager.pickPhysicalDevice(windowsSurface.getSurface());
         //GENERATE A LOGIC DEVICE INTERFACE OF THE SELECTED DEVICE
         logicDeviceManager.generateLogicDevice(devicesManager.getSelectedDevice(),windowsSurface.getSurface());
 
         commandBuffer = CommandBuffer::CommandBuffer(logicDeviceManager.getDevice());
-        //createSwapChain(); -> A014
-        //createImageViews(); -> A014
+        swapChain.createSwapChain(devicesManager.getSelectedDevice(),*logicDeviceManager.getDevice(),windowsSurface.getSurface(),window);
+        swapChain.createImageView(*logicDeviceManager.getDevice());
         //createRenderPass(); -> A0???
         //createGraphicsPipeline(); ->A0???
         //createFramebuffers(); -> A0???
@@ -68,13 +68,13 @@ namespace App{
     }
 
     void App::close(){
+        swapChain.close(*logicDeviceManager.getDevice());
         commandBuffer.close();
         vkDestroyInstance(instance, nullptr);
         windowsSurface.clean(instance);
         logicDeviceManager.clean();
         glfwDestroyWindow(window);
         glfwTerminate();
-
     }
 
     /**

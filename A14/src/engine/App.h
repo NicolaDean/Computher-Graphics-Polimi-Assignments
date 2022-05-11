@@ -3,7 +3,7 @@
 #include "LogicDeviceManager.h"
 #include "WindowsSurface.h"
 #include "CommandBuffer.h"
-
+#include "SwapChain.h"
 namespace App{
     class App {
     private:
@@ -16,6 +16,7 @@ namespace App{
         DeviceManager::LogicDeviceManager logicDeviceManager;
         Presentation::WindowsSurface windowsSurface;
         CommandBuffer::CommandBuffer commandBuffer;
+        Presentation::SwapChain swapChain;
 
     public:
         App(){}

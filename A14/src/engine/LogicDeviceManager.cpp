@@ -1,7 +1,7 @@
 
 #include "LogicDeviceManager.h"
 #include "QueueFamily.h"
-
+#include "constants.h"
 namespace DeviceManager {
 
     VkDevice* LogicDeviceManager::getDevice() {
@@ -31,8 +31,8 @@ namespace DeviceManager {
         createInfo.pQueueCreateInfos = &queueCreateInfo;
         createInfo.queueCreateInfoCount = 1;
         createInfo.pEnabledFeatures = &deviceFeatures;
-        createInfo.enabledExtensionCount = 0;
-
+        createInfo.enabledExtensionCount = static_cast<uint32_t>(AppConstants::deviceExtensions.size());
+        createInfo.ppEnabledExtensionNames = AppConstants::deviceExtensions.data();
         //TODO VALIDATION LAYER
 
         if (vkCreateDevice(physicalDevice, &createInfo, nullptr, &device) != VK_SUCCESS) {

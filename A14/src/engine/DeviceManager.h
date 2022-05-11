@@ -1,5 +1,6 @@
 #include "commonLibs.h"
 #include "QueueFamily.h"
+#include "constants.h"
 
 namespace DeviceManager{
     class DeviceManager {
@@ -19,7 +20,7 @@ namespace DeviceManager{
          * Check presence of devices and select the first device compatible with
          * our application
          */
-        void pickPhysicalDevice();
+        void pickPhysicalDevice(VkSurfaceKHR surface);
 
         /**
          * give each device a score and select the best one
@@ -39,10 +40,17 @@ namespace DeviceManager{
 
         /**
          * check if device is compatible with our app
-         * @param device
+         * @param device device to check
          * @return
          */
-        bool isDeviceSuitable(VkPhysicalDevice device);
+        bool isDeviceSuitable(VkPhysicalDevice device,VkSurfaceKHR surface);
+
+        /**
+         * Check if a device is compatible with all required extensions
+         * @param device  device to check
+         * @return true if all supported
+         */
+        bool checkDeviceExtensionSupport(VkPhysicalDevice device);
 
         /**
          *
@@ -50,6 +58,13 @@ namespace DeviceManager{
          */
         VkPhysicalDevice getSelectedDevice();
 
+
+        /**
+         * check if a specific device support all the required extensions
+         * @param device device to check
+         * @return true if all extensions are supported
+         */
+        bool checkDeviceExtensions(VkPhysicalDevice device);
 
         void printAllDeviceInfo(VkPhysicalDevice device);
     };
