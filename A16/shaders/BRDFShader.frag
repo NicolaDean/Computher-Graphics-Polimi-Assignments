@@ -32,8 +32,7 @@ vec3 Lambert_Diffuse_BRDF(vec3 L, vec3 N, vec3 V, vec3 C) {
 	// vec3 N : normal vector (n)
 	// vec3 V : view direction
 	// vec3 C : main color (diffuse color, or specular color) md
-	
-	return C*V*max(L*N,0);
+	return (C)*(max(dot(N,L),0));
 }
 
 vec3 Oren_Nayar_Diffuse_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float sigma) {
@@ -41,15 +40,47 @@ vec3 Oren_Nayar_Diffuse_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float sigma) {
 	// additional parameter:
 	// float sigma : roughness of the material
 
-	return C;
+
+	//sigma = pow(sigma,2);
+	float fi_2 = pow(sigma,2);
+	vec3 diffuseLambert = Lambert_Diffuse_BRDF(L,N,V,C);
+
+	float lxN = max(0,dot(N,L));
+	float wxN = max(0,dot(N,gubo.eyePos));
+
+	float theta_i = acos(lxN);
+	float theta_r = acos(wxN);
+
+	float alpha = max(theta_i,theta_r);
+	float beta	= min(min(theta_i,theta_r),1.57);
+
+	float A = 1.0 - 0.5 * fi_2 / (fi_2 + 0.33);
+	float B = 0.45 * fi_2 / (fi_2 + 0.09);
+
+	vec3 v_i = normalize(L - lxN*N);
+	vec3 v_r = normalize(gubo.eyePos - wxN*N);
+
+	float G = max(0,dot(v_i,v_r));
+
+	vec3 diffuseOrenNayar = diffuseLambert * (A + B * G * sin(alpha) * tan(beta));
+
+	return diffuseOrenNayar;
 }
 
 vec3 Phong_Specular_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float gamma)  {
 	// Phong Specular BRDF model
 	// additional parameter:
 	// float gamma : exponent of the cosine term
-	
-	return vec3(0,0,0);
+
+	vec3 reflection = -reflect(L,N);
+	float r_wx = max(dot(reflection, gubo.eyePos), 0.0);
+	float lx = max(0.0, dot(N, L));
+
+	float x = max(sign(lx),0.0);
+
+	vec3 result = (C *x) * pow(r_wx, gamma);
+
+	return C;
 }
 
 vec3 Toon_Diffuse_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, vec3 Cd, float thr) {
@@ -57,8 +88,13 @@ vec3 Toon_Diffuse_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, vec3 Cd, float thr) {
 	// additional parameters:
 	// vec3 Cd : color to be used in dark areas
 	// float thr : color threshold
-	
-	return C;
+
+	float lxN = max(0,dot(N,L));
+	vec3 diffuseToon = max(sign(lxN- thr),0.0) * C;
+
+	diffuseToon = C * lxN;
+
+	return diffuseToon;
 }
 
 vec3 Toon_Specular_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float thr)  {
@@ -66,7 +102,14 @@ vec3 Toon_Specular_BRDF(vec3 L, vec3 N, vec3 V, vec3 C, float thr)  {
 	// additional parameter:
 	// float thr : color threshold
 
-	return vec3(0,0,0);
+	vec3 reflection = -reflect(L,N);
+	float r_wx = max(dot(reflection, gubo.eyePos), 0.0);
+
+	float lxN = max(0,dot(N,L));
+
+	vec3 specularToon = max(sign(r_wx - thr), 0.0) * (C * max(sign(lxN),0.0));
+	specularToon = C * r_wx;
+	return specularToon;
 }
 
 

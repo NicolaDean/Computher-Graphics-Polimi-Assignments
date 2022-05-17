@@ -9,13 +9,13 @@ VulkanTest: main.cpp
 
 .PHONY: test clean run shaders
 
-test: VulkanTest
+test:shaders VulkanTest
 	./VulkanTest
 
 clean:
 	rm -f VulkanTest
 	
-run: clean test
+run: clean shaders test
 
 shaders:
 	$(GLSLC_PATH)/glslc $(SHADER_FOLDER)/BRDFShader.frag -o $(SHADER_FOLDER)/BRDFFrag.spv
